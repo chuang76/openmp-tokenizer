@@ -46,7 +46,6 @@ void enqueue(char* line, struct list_node** queue_head, struct list_node** queue
             *queue_tail = tmp; 
         }
     }
-    
 }
 
 struct list_node* dequeue(struct list_node** queue_head, struct list_node** queue_tail, int id)
@@ -75,8 +74,7 @@ void read_file(FILE* fp, struct list_node** queue_head, struct list_node** queue
     char* line = (char *) malloc(sizeof(char) * CHAR_MAX); 
 
     // read the contents (unit: line) of the file, then push the data into the shared queue 
-    while (fgets(line, CHAR_MAX, fp) != NULL)
-    {
+    while (fgets(line, CHAR_MAX, fp) != NULL) {
         enqueue(line, queue_head, queue_tail, id); 
         line = (char *) malloc(sizeof(char) * CHAR_MAX); 
     }
@@ -95,10 +93,9 @@ void tokenize(char* line, vector<char*> kw, int* table, int id)
 
     token = strtok_r(tmp, " ", &saveptr);
 
-    while (token != NULL)
-    {
+    while (token != NULL) {
         int i;
-        // compare to the keywords, if matches, add the count in the table (should be atomic)
+        // compare to the keywords, if matches, add the frequency in the table (should be atomic)
         for (i = 0; i < kw.size(); i++) {
             if (strcmp(token, kw.at(i)) == 0) {
                 #pragma omp atomic
@@ -137,15 +134,15 @@ void prod_cons(int prod_count, int cons_count, FILE* files[], int file_count, ve
         {
             // consumer: tokenzie and calculate the frequency of keyword 
             struct list_node* tmp = NULL; 
-            while (prod_done < prod_count)                              // producer is still running 
-            {
+
+            while (prod_done < prod_count) {
                 tmp = dequeue(&queue_head, &queue_tail, id);
                 if (tmp != NULL)
                     tokenize(tmp->data, kw, table, id);
             }
 
-            while (queue_head != NULL)                                  // process the left contents 
-            {
+            // process the left contents 
+            while (queue_head != NULL) {
                 tmp = dequeue(&queue_head, &queue_tail, id);
                 if (tmp != NULL)
                     tokenize(tmp->data, kw, table, id);
@@ -154,16 +151,14 @@ void prod_cons(int prod_count, int cons_count, FILE* files[], int file_count, ve
     }
 }
 
-char* concat_1(char *s1, char *s2)
-{
+char* concat_1(char *s1, char *s2) {
     char* result = (char*) malloc(strlen(s1) + strlen(s2)); 
     strcpy(result, s1); 
     strcat(result, s2); 
     return result; 
 }
 
-char* concat_2(char *s1, char *s2)
-{
+char* concat_2(char *s1, char *s2) {
     char* result = (char*) malloc(strlen(s1) + strlen(s2) + 1); 
     strcpy(result, s1); 
     strcat(result, s2); 
@@ -172,10 +167,9 @@ char* concat_2(char *s1, char *s2)
 
 int main(int argc, char** argv)
 {
-    int i, prod_count, cons_count, file_count;
-
-    char* dirname;
-    char* kw_name; 
+    int  i, prod_count, cons_count, file_count;
+    char *dirname, *kw_name;
+    double start, end, duration; 
 
     prod_count = 3; 
     cons_count = atoi(argv[1]) - cons_count; 
@@ -198,23 +192,19 @@ int main(int argc, char** argv)
         token = strtok(NULL, " ");
     }
 
-    // open the directory
-    DIR* dir = opendir((const char*)dirname);
+    DIR* dir = opendir((const char*)dirname);    // open the directory
     if (dir == NULL) {
         perror("opendir");
         exit(1);
     }
 
-    // get filenames
-    struct dirent *entry;
+    struct dirent *entry;                        // get filenames
     char** filenames[MAX_FILES] = {0}; 
     char* s1 = concat_1("./", (char *)dirname); 
 
     i = 0; 
-    while ((entry = readdir(dir)) != NULL)
-    {
+    while ((entry = readdir(dir)) != NULL) {
         if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
-
             char* s2 = concat_1("/", entry->d_name); 
             filenames[i] = (char **) concat_2(s1, s2); 
             i++; 
@@ -226,17 +216,20 @@ int main(int argc, char** argv)
     FILE* files[MAX_FILES] = {0};
     for (i = 0; i < file_count; i++) {
         files[i] = (FILE *) fopen((const char *) filenames[i], (const char *)"r"); 
-        if (files[i] == NULL)
-        {
+        if (files[i] == NULL) {
             perror("fopen"); 
             exit(1); 
         }
     }   
 
+    start = omp_get_wtime(); 
     prod_cons(prod_count, cons_count, files, file_count, kw, table);    
+    end = omp_get_wtime();
+    duration += (double)(end - start);
 
     for (i = 0; i < kw.size(); i++)
-         printf("[info] keyword = %s, count = %d\n", kw.at(i), *(table + i));
+         printf("keyword = %s, count = %d\n", kw.at(i), *(table + i));
+    printf("[info] process time = %.3f\n", duration); 
 
     return 0;
 }
