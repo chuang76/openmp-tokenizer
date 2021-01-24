@@ -1,0 +1,2 @@
+hello world
+hello this is file2
