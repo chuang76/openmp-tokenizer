@@ -28,7 +28,7 @@ struct list_node
     struct list_node* next; 
 };
 
-void enqueue(char* line, struct list_node** queue_head, struct list_node** queue_tail, int id)
+void enqueue(char* line, struct list_node** queue_head, struct list_node** queue_tail)
 {
     struct list_node* tmp = NULL; 
     tmp = (struct list_node *) malloc(sizeof(struct list_node)); 
@@ -48,7 +48,7 @@ void enqueue(char* line, struct list_node** queue_head, struct list_node** queue
     }
 }
 
-struct list_node* dequeue(struct list_node** queue_head, struct list_node** queue_tail, int id)
+struct list_node* dequeue(struct list_node** queue_head, struct list_node** queue_tail)
 {
     struct list_node* tmp = NULL; 
 
@@ -69,20 +69,20 @@ struct list_node* dequeue(struct list_node** queue_head, struct list_node** queu
     return tmp; 
 }
 
-void read_file(FILE* fp, struct list_node** queue_head, struct list_node** queue_tail, int id)
+void read_file(FILE* fp, struct list_node** queue_head, struct list_node** queue_tail)
 {
     char* line = (char *) malloc(sizeof(char) * CHAR_MAX); 
 
     // read the contents (unit: line) of the file, then push the data into the shared queue 
     while (fgets(line, CHAR_MAX, fp) != NULL) {
-        enqueue(line, queue_head, queue_tail, id); 
+        enqueue(line, queue_head, queue_tail); 
         line = (char *) malloc(sizeof(char) * CHAR_MAX); 
     }
 
     fclose(fp); 
 }
 
-void tokenize(char* line, vector<char*> kw, int* table, int id)
+void tokenize(char* line, vector<char*> kw, int* table)
 {
     // use thread-safe function strtok_r() rather than strtok() 
     char* tmp = NULL; 
@@ -125,7 +125,7 @@ void prod_cons(int prod_count, int cons_count, FILE* files[], int file_count, ve
         {
             // producer: read the file via the file pointer  
             for (i = id; i < file_count; i += prod_count)
-                read_file(files[i], &queue_head, &queue_tail, id);
+                read_file(files[i], &queue_head, &queue_tail);
 
 #           pragma omp atomic
             prod_done++;
@@ -136,16 +136,16 @@ void prod_cons(int prod_count, int cons_count, FILE* files[], int file_count, ve
             struct list_node* tmp = NULL; 
 
             while (prod_done < prod_count) {
-                tmp = dequeue(&queue_head, &queue_tail, id);
+                tmp = dequeue(&queue_head, &queue_tail);
                 if (tmp != NULL)
-                    tokenize(tmp->data, kw, table, id);
+                    tokenize(tmp->data, kw, table);
             }
 
             // process the left contents 
             while (queue_head != NULL) {
-                tmp = dequeue(&queue_head, &queue_tail, id);
+                tmp = dequeue(&queue_head, &queue_tail);
                 if (tmp != NULL)
-                    tokenize(tmp->data, kw, table, id);
+                    tokenize(tmp->data, kw, table);
             }
         }
     }
