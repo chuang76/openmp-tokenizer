@@ -86,17 +86,16 @@ Given a keyword file that contains several keywords. Use OpenMP to implement a p
   }
   ```
 
-- Why the function strtok() is thread-unsafe? The function strtok() uses a static buffer while parsing, which may cause a [cache coherence](https://en.wikipedia.org/wiki/Cache_coherence) problem. If the buffer is overwritten, the result may be incorrect. The source code of strtok() is as follows. 
+- Why the function strtok() is thread-unsafe? The reason is that strtok() uses a static buffer while parsing, which may cause a [cache coherence](https://en.wikipedia.org/wiki/Cache_coherence) problem. If the buffer is overwritten, the result may be incorrect. The following is the source code of strtok(), as you can see, it uses a static variable `char *olds`. 
 
   ```c
-  char * strtok (char *s, const char *delim)
-  {
+  char * strtok (char *s, const char *delim) {
       static char *olds;
-    	return __strtok_r (s, delim, &olds);
+      return __strtok_r (s, delim, &olds);
   }
   ```
-
-- Measure the process time: if you want to measure the process time, please use the function omp_get_wtime(), which returns elapsed wall clock time in seconds.
+  
+- Measure time: if you want to measure the process time, please use the function omp_get_wtime(), which returns elapsed wall clock time in seconds.
 
   
 
@@ -125,5 +124,6 @@ Given a keyword file that contains several keywords. Use OpenMP to implement a p
 
 ## Example
 
-Here is a short example. The keywords are `hello and is moon`. 
+Here is a short example. The keywords are `hello and is moon`. The input directory contains three files called space.txt, test1.txt, test2.txt, respectively. 
 
+![](https://github.com/chuang76/openmp-tokenizer/blob/main/example.png?raw=true)
